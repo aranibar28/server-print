@@ -12,7 +12,7 @@ app.use(express.json());
 app.get('/', (req, res) => res.json({ server: 'online' }));
 
 app.get('/api/impresoras/listar', (req, res) => {
-  exec('wmic printer get name', (error, stdout, stderr) => {
+  exec('lpstat -p', (error, stdout, stderr) => {
     if (error) {
       console.error(`Error al listar impresoras: ${error.message}`);
       return res.status(500).json({ error: 'Error al listar impresoras' });
@@ -21,7 +21,7 @@ app.get('/api/impresoras/listar', (req, res) => {
     const impresoras = stdout
       .split('\n')
       .map((line) => line.trim())
-      .filter((line) => line && line !== 'Name');
+      .filter((line) => line && line.startsWith('printer'));
     res.json(impresoras);
   });
 });
@@ -37,7 +37,7 @@ app.post('/api/impresoras/imprimir', (req, res) => {
   const documentBuffer = Buffer.from(document, 'base64');
 
   // Definir el path del archivo temporal
-  const tempFilePath = path.join(__dirname, 'temp_document.pdf');
+  const tempFilePath = path.join('/tmp', 'temp_document.pdf');
 
   // Guardar el Buffer como un archivo temporal
   fs.writeFile(tempFilePath, documentBuffer, (err) => {
@@ -47,10 +47,7 @@ app.post('/api/impresoras/imprimir', (req, res) => {
     }
 
     // Imprimir el archivo temporal
-    const printCommand =
-      process.platform === 'win32'
-        ? `print /d:"${printerName}" "${tempFilePath}"`
-        : `lp -d ${printerName} ${tempFilePath}`;
+    const printCommand = `lp -d ${printerName} ${tempFilePath}`;
 
     exec(printCommand, (error, stdout, stderr) => {
       // Eliminar el archivo temporal después de la impresión
