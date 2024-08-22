@@ -9,6 +9,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => res.json({ server: 'online' }));
+
 app.get('/api/impresoras/listar', (req, res) => {
   exec('wmic printer get name', (error, stdout, stderr) => {
     if (error) {
